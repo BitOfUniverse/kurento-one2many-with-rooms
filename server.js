@@ -17,7 +17,6 @@ var path = require('path');
 var url = require('url');
 var express = require('express');
 var minimist = require('minimist');
-var ws = require('ws');
 var kurento = require('kurento-client');
 var fs    = require('fs');
 var https = require('https');
@@ -412,5 +411,12 @@ function onIceCandidate(socket, _candidate) {
         candidatesQueue[socket.id].push(candidate);
     }
 }
+
+app.use(function (req, res, next) {
+	// Website you wish to allow to connect
+	res.setHeader('Access-Control-Allow-Origin', '*');
+
+	next();
+});
 
 app.use(express.static(path.join(__dirname, 'static')));
