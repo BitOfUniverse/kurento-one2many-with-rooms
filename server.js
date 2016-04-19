@@ -97,6 +97,17 @@ function joinRoom(socket, data) {
 	console.log('Join room: ' + data.room + ' with username ' + data.username);
 }
 
+function newChatMessage(socket, message){
+	var message = {message: message, username: socket.username}
+	io.in(socket.room).emit('chat:newMessage', message)
+
+	var room = getRoom(socket);
+	room.chat.push(message);
+
+	if (room.chat.length > 30)
+		room.chat.shift()
+}
+
 /*
  * Define possible actions which we'll send thru Websocket
  */
@@ -174,13 +185,8 @@ io.on('connection', function(socket) {
 
 	// Chat methods
 	socket.on('chat:newMessage', function(message) {
-		var message = {message: message, username: socket.username}
-		io.in(socket.room).emit('chat:newMessage', message)
-		var room = getRoom(socket);
-		room.chat.push(message)
-
-		console.log(room.chat);
-	})
+		newChatMessage(socket, message);
+	});
 
 	socket.on('chat:loadMessages', function() {
 		var room = getRoom(socket);
