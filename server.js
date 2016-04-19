@@ -76,21 +76,25 @@ function createRoom(room) {
 	rooms[room] = {
 		presenter: null,
 		pipeline: null,
-		viewers: []
+		viewers: [],
+		chat: []
 	};
 }
 
-function setRoom(socket, room) {
+function joinRoom(socket, data) {
 	// leave all other socket.id rooms
 	while(socket.rooms.length) {
 		socket.leave(socket.rooms[0]);
 	}
 
 	// join new socket.io room
-	socket.join(room);
-	socket.room = room;
+	socket.join(data.room);
+	socket.room = data.room;
+	socket.username = data.username;
 
-	console.log('Sett room to: ',room);
+	socket.emit('joinedRoom');
+
+	console.log('Join room: ' + data.room + ' with username ' + data.username);
 }
 
 /*
@@ -130,21 +134,17 @@ io.on('connection', function(socket) {
 
 	// Handle events from clients
 	socket.on('presenter', function (data) {
-		setRoom(socket, data.room);
-
 		startPresenter(socket, data.sdpOffer, function(error, sdpAnswer) {
-			response = (error) ? rejectPeerResponse('presenter', error) : acceptPeerResponse('presenter', sdpAnswer);
+			var response = (error) ? rejectPeerResponse('presenter', error) : acceptPeerResponse('presenter', sdpAnswer);
 			socket.emit(response.id, response);
 			if (!error) {
-				console.log('Start publishing');
+				console.log(socket.username + ' starting publishing to ' + socket.room + ' room');
 				socket.broadcast.emit('streamStarted');
 			}
 		});
 	});
 
 	socket.on('viewer', function (data){
-		setRoom(socket, data.room);
-
 		startViewer(socket, data.sdpOffer, function(error, sdpAnswer) {
 			response = (error) ? rejectPeerResponse('viewer', error) : acceptPeerResponse('viewer', sdpAnswer);
 			socket.emit(response.id, response);
@@ -159,19 +159,34 @@ io.on('connection', function(socket) {
 		onIceCandidate(socket, data.candidate);
 	});
 
-	socket.on('subscribeToStream', function (roomName){
-		setRoom(socket, roomName);
+	socket.on('subscribeToStream', function (data){
+		joinRoom(socket, data);
 		var room = getRoom(socket);
 		if (room.presenter) {
 			socket.emit('streamStarted');
 		}
 	});
 
+	socket.on('joinRoom', function (data){
+		joinRoom(socket, data)
+	});
+
 
 	// Chat methods
 	socket.on('chat:newMessage', function(message) {
+		var message = {message: message, username: socket.username}
 		io.in(socket.room).emit('chat:newMessage', message)
+		var room = getRoom(socket);
+		room.chat.push(message)
+
+		console.log(room.chat);
 	})
+
+	socket.on('chat:loadMessages', function() {
+		var room = getRoom(socket);
+
+		socket.emit('chat:messages', room.chat);
+	});
 });
 
 
