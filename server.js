@@ -160,14 +160,21 @@ io.on('connection', function(socket) {
 	});
 
 	socket.on('subscribeToStream', function (roomName){
-		console.log(arguments);
 		setRoom(socket, roomName);
 		var room = getRoom(socket);
 		if (room.presenter) {
 			socket.emit('streamStarted');
 		}
 	});
+
+
+	// Chat methods
+	socket.on('chat:newMessage', function(message) {
+		io.in(socket.room).emit('chat:newMessage', message)
+	})
 });
+
+
 
 /*
  * Definition of functions
