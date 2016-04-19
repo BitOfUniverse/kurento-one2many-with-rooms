@@ -9,8 +9,7 @@
     "express": "~4.12.4",
     "kurento-client": "Kurento/kurento-client-js",
     "minimist": "^1.1.1",
-    "socket.io": "^1.4.5",
-    "ws": "~0.7.2"
+    "socket.io": "^1.4.5"
   },
   "devDependencies": {
     "bower": "^1.4.1"
